@@ -1,12 +1,13 @@
 import { useRef, useEffect } from 'react';
 import { UploadedImage, StatusResponse } from '../types';
+import { API_BASE_URL } from '@/app/constant';
 
 export const useStatusPolling = (onStatusUpdate: (image: UploadedImage) => void) => {
   const pollingIntervals = useRef<{[key: string]: NodeJS.Timeout}>({});
 
   const pollStatus = async (instanceId: string, fileName: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/?instanceId=${instanceId}`);
+      const response = await fetch(`${API_BASE_URL}/?instanceId=${instanceId}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch status: ${response.status}`);
       }
@@ -32,7 +33,7 @@ export const useStatusPolling = (onStatusUpdate: (image: UploadedImage) => void)
 
   const fetchAITags = async (instanceId: string, fileName: string) => {
     try {
-      const tagsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/tags?instanceId=${instanceId}`);
+      const tagsResponse = await fetch(`${API_BASE_URL}/tags?instanceId=${instanceId}`);
       if (!tagsResponse.ok) {
         throw new Error(`Failed to fetch tags: ${tagsResponse.status}`);
       }

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { UploadedImage, UploadResponse } from '../types';
 import { useStatusPolling } from './useStatusPolling';
+import { API_BASE_URL } from '@/app/constant';
 
 export const useImageUpload = (onUploadComplete: (image: UploadedImage) => void) => {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -30,7 +31,7 @@ export const useImageUpload = (onUploadComplete: (image: UploadedImage) => void)
       const formData = new FormData();
       formData.append('image', selectedImage);
 
-      const response = await fetch(process.env.NEXT_PUBLIC_API_BASE_URL as string, {
+      const response = await fetch(API_BASE_URL, {
         method: 'POST',
         body: formData,
         mode: 'cors',

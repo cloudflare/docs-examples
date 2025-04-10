@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '../constant';
 import { UploadedImage } from './types';
 import { useState } from 'react';
 
@@ -15,7 +16,7 @@ export default function UploadsTable({ uploadedImages }: UploadsTableProps) {
     console.log('Sending AI tag request for instanceId:', instanceId, 'with wantTags:', wantTags);
     
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/approval-for-ai-tagging`, {
+      const response = await fetch(`${API_BASE_URL}/approval-for-ai-tagging`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
