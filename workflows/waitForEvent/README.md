@@ -21,25 +21,11 @@ The `waitForEvent` API is a powerful feature of Cloudflare Workflows that allows
 
 ## Deployment
 
-### Frontend Deployment
-1. Navigate to the frontend directory:
-   ```bash
-   cd nextjs-workflow-frontend
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Build the application:
-   ```bash
-   npm run build
-   ```
-4. Deploy to Cloudflare:
-   ```bash
-   npm run deploy
-   ``` 
 
 ### Workflow Deployment
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/thomas-desmond/docs-examples/tree/main/workflows/waitForEvent/workflow)
+
+
 1. Navigate to the workflow directory:
    ```bash
    cd workflow
@@ -52,19 +38,41 @@ The `waitForEvent` API is a powerful feature of Cloudflare Workflows that allows
    ```bash
    npx wrangler d1 create workflow-demo
    ```
-
-5. Apply the database schema (run in the /workflow folder):
+4. Apply the database schema (run in the /workflow folder):
    ```bash
    npx wrangler d1 execute workflow-demo --remote --file=./db.sql
    ```
-6. Deploy the workflow using Wrangler:
+5. Deploy the workflow using Wrangler:
    ```bash
    npm run deploy
    ```
-7. Update `constants.ts` with your Workflow base url and redeploy
-   ```txt
-    export const API_BASE_URL = '<your-workflow-url>';
+6. Save the deployment URL we'll need that setting up the Next.js frontend.
+   
+### Frontend Deployment
+
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/thomas-desmond/docs-examples/tree/main/workflows/waitForEvent/nextjs-workflow-frontend)
+
+
+1. Navigate to the frontend directory:
+   ```bash
+   cd nextjs-workflow-frontend
    ```
+2. Update `constants.ts` with your Workflow base url and redeploy
+   ```txt
+      export const API_BASE_URL = '<your-workflow-url>';
+   ```
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
+4. Build the application:
+   ```bash
+   npm run build
+   ```
+5. Deploy to Cloudflare:
+   ```bash
+   npm run deploy
+   ``` 
 ## Reference Architecture
 ![workflow-diagram](https://github.com/user-attachments/assets/ffee1de3-a5a0-4727-bae0-cfbc665da308)
 
