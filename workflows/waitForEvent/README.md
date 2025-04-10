@@ -25,6 +25,7 @@ The `waitForEvent` API is a powerful feature of Cloudflare Workflows that allows
 ### Workflow Deployment
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/thomas-desmond/docs-examples/tree/main/workflows/waitForEvent/workflow)
 
+If you use the Deploy to Cloudflare button, you only need to complete "Step 4: Apply database schema" replacing `workflow-demo` with your database name. Deploying via the button will take care of creating the R2 bucket and empty D1 database.
 
 1. Navigate to the workflow directory:
    ```bash
@@ -50,29 +51,24 @@ The `waitForEvent` API is a powerful feature of Cloudflare Workflows that allows
    
 ### Frontend Deployment
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/thomas-desmond/docs-examples/tree/main/workflows/waitForEvent/nextjs-workflow-frontend)
-
-
-1. Navigate to the frontend directory:
+1. Clone this repository to your local machine
+2. Navigate to the frontend directory:
    ```bash
    cd nextjs-workflow-frontend
-   ```
-2. Update `constants.ts` with your Workflow base url and redeploy
-   ```txt
-      export const API_BASE_URL = '<your-workflow-url>';
    ```
 3. Install dependencies:
    ```bash
    npm install
    ```
-4. Build the application:
-   ```bash
-   npm run build
+4. In your preferred editor open the `\nextjs-workflow-frontend\app\constants.ts` file and change the API_BASE_URL to the url of your deployed Workflow (No trailing `/` at the end).
+   ```txt
+      export const API_BASE_URL = '<your-workflow-url>';
    ```
-5. Deploy to Cloudflare:
+4. Deploy to Cloudflare:
    ```bash
    npm run deploy
    ``` 
+
 ## Reference Architecture
 ![workflow-diagram](https://github.com/user-attachments/assets/ffee1de3-a5a0-4727-bae0-cfbc665da308)
 
@@ -81,4 +77,3 @@ The `waitForEvent` API is a powerful feature of Cloudflare Workflows that allows
 * Read the [Workflows GA announcement blog](https://blog.cloudflare.com/workflows-ga-production-ready-durable-execution/) to understand the core concepts
 * Review the [Workflows developer documentation](https://developers.cloudflare.com/workflows/) for detailed API reference and examples
 * Check out the [waitForEvent API documentation](https://developers.cloudflare.com/workflows/apis/wait-for-event/) for specific details about implementing human-in-the-loop workflows
-
