@@ -1,0 +1,17 @@
+{
+	"name": "workflows-waitforevent-monorepo",
+	"version": "1.0.0",
+	"private": true,
+	"workspaces": [
+		"workflow",
+		"frontend"
+	],
+	"scripts": {
+		"dev": "npm run dev --workspace=workflow & npm run dev --workspace=frontend",
+		"build": "npm run build --workspaces",
+		"test": "npm run test --workspaces"
+	},
+	"devDependencies": {
+		"typescript": "^5.0.0"
+	}
+}
