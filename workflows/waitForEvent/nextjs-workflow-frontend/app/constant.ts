@@ -1,1 +1,1 @@
-export const API_BASE_URL = '<your-workflow-url>';
+export const API_BASE_URL = '<your-workflow-url-NO-TRAILING-SLASH>';
