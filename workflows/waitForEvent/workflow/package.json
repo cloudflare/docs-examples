@@ -9,7 +9,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@cloudflare/workers-types": "^4.20250407.0",
+    "@cloudflare/workers-types": "^4.20250414.0",
     "nanoid": "^5.1.5"
   },
   "devDependencies": {
