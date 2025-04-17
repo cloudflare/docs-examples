@@ -95,7 +95,11 @@ If you use the Deploy to Cloudflare button, you only need to complete "Step 4: A
 
 ### Frontend Deployment
 
-1. Clone this repository to your local machine if you have not already. 
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/docs-examples/tree/main/workflows/waitForEvent/nextjs-workflow-frontend)
+
+If you use the "Deploy to Cloudflare" button for the Next.js frontend it will create a new cloned repository on your GitHub account, you will need to clone the created repository and follow steps 4 and 5 to ensure the application functions correctly.
+
+1. Clone this repository to your local machine if you have not already.
 2. Navigate to the frontend directory:
 
    ```bash

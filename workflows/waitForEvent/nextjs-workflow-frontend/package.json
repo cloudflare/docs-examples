@@ -7,31 +7,27 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy": "opennextjs-cloudflare && wrangler deploy",
-    "preview": "opennextjs-cloudflare && wrangler dev",
+		"deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+		"preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts"
   },
   "dependencies": {
     "next": "15.2.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "@opennextjs/cloudflare": "~1.0.0-beta.0 || ^1.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250403.0",
     "@eslint/eslintrc": "^3",
-    "@opennextjs/cloudflare": "^0.5.12",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.3",
     "typescript": "^5",
-    "wrangler": "^4.7.0"
-  },
-  "optionalDependencies": {
-    "@tailwindcss/oxide-linux-x64-gnu": "^4.0.14",
-    "lightningcss-linux-x64-gnu": "^1.29"
+    "wrangler": "^4.11.1",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
   }
 }
