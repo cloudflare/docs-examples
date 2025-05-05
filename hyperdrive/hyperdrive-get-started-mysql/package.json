@@ -1,5 +1,5 @@
 {
-	"name": "hyperdrive-get-started-postgres",
+	"name": "hyperdrive-get-started-mysql",
 	"version": "0.0.0",
 	"private": true,
 	"scripts": {
@@ -17,6 +17,6 @@
 		"wrangler": "^4.14.1"
 	},
 	"dependencies": {
-		"postgres": "^3.4.5"
+		"mysql2": "^3.14.1"
 	}
 }
