@@ -12,7 +12,7 @@
 	},
 	"kv_namespaces": [
 		{
-		"binding": "BINDING_NAME",
+		"binding": "USER_NOTIFICATION",
 		"id": "<ADD YOUR KV NAMESPACEID HERE>"
 		}
 	]
