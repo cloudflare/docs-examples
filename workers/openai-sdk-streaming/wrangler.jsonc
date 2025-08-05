@@ -10,9 +10,6 @@
 	"observability": {
 		"enabled": true
 	}
-  "vars": {
-    "OPENAI_API_KEY": "Your API key here"
-  },
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
