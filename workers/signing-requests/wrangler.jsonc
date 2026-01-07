@@ -10,7 +10,7 @@
 	"observability": {
 		"enabled": true
 	},
-  "compatibity_flags": [
+  "compatibility_flags": [
     "nodejs_compat"
   ],
 	/**
