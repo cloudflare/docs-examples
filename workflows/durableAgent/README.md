@@ -1,4 +1,4 @@
-# Cloudflare Workflows - Durable AI Agent
+# Cloudflare Workflows - Build an Agent with Workflows + Agents SDK
 
 This template demonstrates how to build a durable AI agent using Cloudflare Workflows. The agent loop is checkpointed at each LLM turn and tool call, providing automatic retries and error handling. Real-time progress updates are broadcast to connected clients via a Durable Object using the Agents SDK.
 
@@ -17,7 +17,7 @@ This template demonstrates how to build a durable AI agent using Cloudflare Work
 
 ## What is a Durable Agent?
 
-A durable agent combines Cloudflare Workflows with an AI agent loop to create fault-tolerant, long-running AI tasks. Each step in the agent loop (LLM calls, tool executions) is checkpointed, so if a failure occurs, the workflow resumes from the last successful step rather than starting over.
+A durable agent is an implementation of an agent loop within Cloudflare Workflows. Workflows, Cloudflare's durable execution engine for multi-step agents, guarantees retry behavior and error handling to ensure that your agent is running durably. Each step in the agent loop (LLM calls, tool executions) is checkpointed, so if a failure occurs, the workflow resumes from the last successful step rather than starting over.
 
 This template includes:
 
