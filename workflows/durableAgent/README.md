@@ -24,7 +24,7 @@ This template includes:
 - A checkpointed agent loop with configurable max turns
 - Automatic retries with exponential backoff for LLM calls
 - Tool calling (GitHub repository search and details)
-- Real-time progress updates via WebSocket using a Durable Object
+- Real-time progress updates via WebSocket using the Agents SDK
 
 ## Clone only the durableAgent folder within the docs-examples repository
 
