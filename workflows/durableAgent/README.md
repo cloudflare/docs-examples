@@ -95,10 +95,10 @@ This template includes:
 
 ### Local Development
 
-1. Copy `.dev.vars.example` to `.dev.vars` and fill in your values:
+1. Copy `.env.example` to `.env` and fill in your values:
 
    ```bash
-   cp .dev.vars.example .dev.vars
+   cp .env.example .env
    ```
 
 2. Run the development server:
