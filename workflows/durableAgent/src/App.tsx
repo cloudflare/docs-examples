@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
-import WebSocket from "partysocket/ws";
+import { useAgent } from "agents/react";
 import { AgentStatus } from "./types";
-import type { WebSocketMessage, StartWorkflowRequest, StartWorkflowResponse } from "./types";
+import type { AgentState, StartWorkflowRequest, StartWorkflowResponse } from "./types";
 
 type AppStatus = AgentStatus | "running";
 
@@ -25,7 +25,6 @@ export default function App() {
   const [currentTurn, setCurrentTurn] = useState(0);
   const [instanceId, setInstanceId] = useState<string | null>(null);
   const [connectionState, setConnectionState] = useState<"connecting" | "connected" | "disconnected">("connecting");
-  const wsRef = useRef<WebSocket | null>(null);
   const stepsEndRef = useRef<HTMLDivElement | null>(null);
   const isSubmittingRef = useRef(false);
 
@@ -36,83 +35,69 @@ export default function App() {
     }
   }, [steps]);
 
-  useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/agent`);
+  // Connect to the Agent using the Agents SDK
+  useAgent<AgentState>({
+    agent: "research-agent",
+    name: "default",
+    onStateUpdate: (newState) => {
+      // Ignore stale state from previous workflow when we just started a new one
+      if (isSubmittingRef.current) return;
 
-    ws.addEventListener("open", () => {
-      console.log("WebSocket connected");
-      setConnectionState("connected");
-    });
+      setStatus(newState.status as AppStatus || AgentStatus.IDLE);
 
-    ws.addEventListener("message", (event) => {
-      const data = JSON.parse(event.data) as WebSocketMessage;
-      if (data.type === "state" && data.data) {
-        // Ignore stale state from previous workflow when we just started a new one
-        if (isSubmittingRef.current) return;
-        
-        const state = data.data;
-        setStatus(state.status as AppStatus || AgentStatus.IDLE);
+      // Extract turn number from state message
+      const turnMatch = newState.message?.match(/Processing turn (\d+)/);
+      const turnNum = turnMatch?.[1] ? parseInt(turnMatch[1]) : 1;
 
-        // Extract turn number from state message
-        const turnMatch = state.message?.match(/Processing turn (\d+)/);
-        const turnNum = turnMatch?.[1] ? parseInt(turnMatch[1]) : 1;
+      // Extract tool name and create step log
+      if (newState.message?.includes("Using tool:")) {
+        const toolMatch = newState.message.match(/Using tool: (\w+)/);
+        const toolName = toolMatch?.[1];
+        if (toolMatch && toolName) {
+          const newStep: StepLog = {
+            id: `${Date.now()}-${toolName}`,
+            turn: turnNum,
+            tool: toolName,
+            message: `Executing ${toolName}...`,
+            status: "running",
+            timestamp: new Date(),
+          };
 
-        // Extract tool name and create step log
-        if (state.message?.includes("Using tool:")) {
-          const toolMatch = state.message.match(/Using tool: (\w+)/);
-          const toolName = toolMatch?.[1];
-          if (toolMatch && toolName) {
-            const newStep: StepLog = {
-              id: `${Date.now()}-${toolName}`,
-              turn: turnNum,
-              tool: toolName,
-              message: `Executing ${toolName}...`,
-              status: "running",
-              timestamp: new Date(),
-            };
-            
-            setSteps((prev) => {
-              // Mark previous running steps as complete
-              const updated = prev.map((s) =>
-                s.status === "running" ? { ...s, status: "complete" as const } : s
-              );
-              return [...updated, newStep];
-            });
-          }
-        }
-
-        // Handle completion
-        if (state.status === AgentStatus.COMPLETE) {
-          setSteps((prev) =>
-            prev.map((s) =>
+          setSteps((prev) => {
+            const updated = prev.map((s) =>
               s.status === "running" ? { ...s, status: "complete" as const } : s
-            )
-          );
-        }
-
-        if ("result" in state) {
-          setResult(state.result ?? "");
+            );
+            return [...updated, newStep];
+          });
         }
       }
-    });
 
-    ws.addEventListener("close", () => {
-      console.log("WebSocket disconnected");
+      // Handle completion
+      if (newState.status === AgentStatus.COMPLETE) {
+        setSteps((prev) =>
+          prev.map((s) =>
+            s.status === "running" ? { ...s, status: "complete" as const } : s
+          )
+        );
+      }
+
+      if ("result" in newState) {
+        setResult(newState.result ?? "");
+      }
+    },
+    onOpen: () => {
+      console.log("Agent connected");
+      setConnectionState("connected");
+    },
+    onClose: () => {
+      console.log("Agent disconnected");
       setConnectionState("disconnected");
-    });
-
-    ws.addEventListener("error", () => {
-      console.error("WebSocket error");
+    },
+    onError: () => {
+      console.error("Agent connection error");
       setConnectionState("disconnected");
-    });
-
-    wsRef.current = ws;
-
-    return () => {
-      ws.close();
-    };
-  }, []);
+    },
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

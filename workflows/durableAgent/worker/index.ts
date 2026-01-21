@@ -1,6 +1,7 @@
 export { AgentWorkflow } from "./workflow";
 export { ResearchAgent } from "./agent";
 
+import { routeAgentRequest } from "agents";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { StartWorkflowRequestSchema, ResetRequestSchema } from "./types";
@@ -9,11 +10,10 @@ import { DEFAULT_AGENT_ID } from "./constants";
 
 const app = new Hono<{ Bindings: Env }>();
 
-// WebSocket connections to agent
-app.all("/ws/agent/*", (c) => {
-  const id = c.env.RESEARCH_AGENT.idFromName(DEFAULT_AGENT_ID);
-  const agent = c.env.RESEARCH_AGENT.get(id);
-  return agent.fetch(c.req.raw);
+// Agent WebSocket connections (handled by Agents SDK)
+app.all("/agents/*", async (c) => {
+  const response = await routeAgentRequest(c.req.raw, c.env);
+  return response ?? new Response("Not found", { status: 404 });
 });
 
 // Reset workflow and agent state

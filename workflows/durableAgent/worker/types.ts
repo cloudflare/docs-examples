@@ -20,13 +20,6 @@ export interface AgentState {
   result?: string;
 }
 
-// WebSocket message envelope
-export interface WebSocketMessage {
-  type: "state" | "error" | "ping";
-  data?: AgentState;
-  error?: string;
-}
-
 // API types
 export interface StartWorkflowRequest {
   task: string;

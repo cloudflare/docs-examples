@@ -4,7 +4,6 @@
 export { AgentStatus } from "../worker/types";
 export type {
   AgentState,
-  WebSocketMessage,
   StartWorkflowRequest,
   StartWorkflowResponse,
   WorkflowStatusResponse,
