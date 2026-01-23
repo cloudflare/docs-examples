@@ -7,12 +7,11 @@ This template demonstrates how to build a durable AI agent using Cloudflare Work
 - Workflows
 - AI Gateway
 - Agents SDK
-- Durable Objects
 - Workers
 
 ## Repository Structure
 
-- `/worker`: Workflow definition, Durable Object agent, and API routes
+- `/worker`: Workflow definition, Agent definition, and API routes
 - `/src`: React frontend (Vite)
 
 ## What is a Durable Agent?
@@ -24,7 +23,7 @@ This template includes:
 - A checkpointed agent loop with configurable max turns
 - Automatic retries with exponential backoff for LLM calls
 - Tool calling (GitHub repository search and details)
-- Real-time progress updates via WebSocket using a Durable Object
+- Real-time progress updates via WebSocket using the Agents SDK
 
 ## Clone only the durableAgent folder within the docs-examples repository
 
@@ -96,10 +95,10 @@ This template includes:
 
 ### Local Development
 
-1. Copy `.dev.vars.example` to `.dev.vars` and fill in your values:
+1. Copy `.env.example` to `.env` and fill in your values:
 
    ```bash
-   cp .dev.vars.example .dev.vars
+   cp .env.example .env
    ```
 
 2. Run the development server:
