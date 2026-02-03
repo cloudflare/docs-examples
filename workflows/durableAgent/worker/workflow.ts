@@ -27,6 +27,7 @@ const MAX_TURNS = 10;
 type Params = { task: string };
 
 export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
+  // AI Gateway compat endpoint provides unified billing across providers
   private getAIGatewayUrl(): string {
     return `https://gateway.ai.cloudflare.com/v1/${this.env.CF_ACCOUNT_ID}/${this.env.CF_GATEWAY_ID}/compat/chat/completions`;
   }
@@ -49,6 +50,7 @@ export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
     return response.json();
   }
 
+  // Convert tool definitions to OpenAI-compatible format
   private getToolDefinitions(): ToolDefinition[] {
     return tools.map((tool) => ({
       type: "function" as const,
@@ -71,13 +73,15 @@ export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
 
     const toolDefinitions = this.getToolDefinitions();
 
+    // Agentic loop - each step is durably checkpointed
     for (let turn = 0; turn < MAX_TURNS; turn++) {
-      // Update agent state (durable, broadcasts to clients)
+      // Update agent state (durable, broadcasts to connected clients)
       await step.mergeAgentState({
         status: "running",
         message: `Processing turn ${turn + 1}...`,
       });
 
+      // Call the LLM with retry logic
       const stepResult = await step.do(
         `llm-turn-${turn}`,
         { retries: { limit: 3, delay: "10 seconds", backoff: "exponential" } },
@@ -89,6 +93,7 @@ export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
             tools: toolDefinitions,
           };
           const result = await this.callAIGateway(request);
+          // Serialize to ensure workflow state is JSON-safe
           return JSON.parse(JSON.stringify(result));
         },
       );
@@ -107,7 +112,7 @@ export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
         ...(choice.message.tool_calls && { tool_calls: choice.message.tool_calls }),
       });
 
-      // Done - no tool calls
+      // Done - model finished without requesting tool calls
       if (choice.finish_reason === "stop" || !choice.message.tool_calls?.length) {
         const result: WorkflowResult = {
           status: "complete",
@@ -115,7 +120,7 @@ export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
           result: choice.message.content ?? null,
         };
 
-        // Update agent state with result (durable)
+        // Update agent state with final result (durable)
         await step.mergeAgentState({
           status: "complete",
           message: "Complete",
@@ -127,9 +132,10 @@ export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
 
       // Process tool calls
       for (const toolCall of choice.message.tool_calls) {
-        // Broadcast tool execution to clients (non-durable)
+        // Broadcast tool execution to clients (non-durable, real-time UI update)
         this.broadcastToClients({ type: "tool_call", tool: toolCall.function.name, turn });
 
+        // Execute tool with retry logic
         const toolResult = await step.do(
           `tool-${turn}-${toolCall.id}`,
           { retries: { limit: 2, delay: "5 seconds" } },
@@ -150,7 +156,7 @@ export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
       }
     }
 
-    // Max turns reached
+    // Max turns reached without completion
     await step.mergeAgentState({ status: "error", message: "Max turns reached" });
     return { status: "max_turns_reached", turns: MAX_TURNS };
   }
