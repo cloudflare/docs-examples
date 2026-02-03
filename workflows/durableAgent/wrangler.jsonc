@@ -15,21 +15,21 @@
 	"observability": {
 		"enabled": true
 	},
-	"workflows": [
-		{
-			"name": "agent-workflow",
-			"binding": "AGENT_WORKFLOW",
-			"class_name": "AgentWorkflow"
-		}
-	],
 	"durable_objects": {
 		"bindings": [
 			{
-				"name": "RESEARCH_AGENT",
+				"name": "ResearchAgent",
 				"class_name": "ResearchAgent"
 			}
 		]
 	},
+	"workflows": [
+		{
+			"name": "research-workflow",
+			"binding": "RESEARCH_WORKFLOW",
+			"class_name": "ResearchWorkflow"
+		}
+	],
 	"migrations": [
 		{
 			"tag": "v1",

@@ -1,37 +1,9 @@
-import { z } from "zod";
-
-// Agent status constants
-export const AgentStatus = {
-  IDLE: "idle",
-  RUNNING: "running",
-  SEARCHING: "searching",
-  ANALYZING: "analyzing",
-  FETCHING: "fetching",
-  COMPLETE: "complete",
-  ERROR: "error",
-} as const;
-
-export type AgentStatus = (typeof AgentStatus)[keyof typeof AgentStatus];
-
 // Agent state for WebSocket communication
 export interface AgentState {
-  status: AgentStatus;
+  status: "idle" | "running" | "complete" | "error";
   message: string;
   result?: string;
-}
-
-// API types
-export interface StartWorkflowRequest {
-  task: string;
-}
-
-export interface StartWorkflowResponse {
-  instanceId: string;
-}
-
-export interface WorkflowStatusResponse {
-  status: string;
-  output: unknown;
+  currentWorkflow?: string;
 }
 
 // Workflow result
@@ -41,21 +13,44 @@ export interface WorkflowResult {
   result?: string | null;
 }
 
-// Progress update from workflow to agent
-export interface ProgressUpdate {
-  status: string;
-  message: string;
-  result?: string | undefined;
+// Broadcast message types from workflow/agent to clients
+export interface ToolCallMessage {
+  type: "tool_call";
+  tool: string;
+  turn: number;
 }
 
-// OpenAI-compatible types for AI Gateway
-// See: https://platform.openai.com/docs/api-reference/chat
+export interface ProgressMessage {
+  type: "progress";
+  instanceId: string;
+  progress: {
+    step?: string;
+    status?: string;
+    percent?: number;
+    message?: string;
+  };
+}
 
+export interface CompleteMessage {
+  type: "complete";
+  instanceId: string;
+  result?: WorkflowResult;
+}
+
+export interface ErrorMessage {
+  type: "error";
+  instanceId: string;
+  error: string;
+}
+
+export type BroadcastMessage = ToolCallMessage | ProgressMessage | CompleteMessage | ErrorMessage;
+
+// OpenAI-compatible types for AI Gateway
 export interface ChatMessage {
   role: "system" | "user" | "assistant" | "tool";
   content: string | null;
-  tool_calls?: ToolCall[] | undefined;
-  tool_call_id?: string | undefined;
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
 }
 
 export interface ToolCall {
@@ -94,32 +89,9 @@ export interface ChatCompletionResponse {
     message: {
       role: "assistant";
       content: string | null;
-      tool_calls?: ToolCall[] | undefined;
+      tool_calls?: ToolCall[];
     };
     finish_reason: "stop" | "tool_calls" | "length" | "content_filter";
   }[];
 }
 
-// Zod schemas for validation
-
-export const StartWorkflowRequestSchema = z.object({
-  task: z.string().min(1, "Task must not be empty"),
-});
-
-export const ProgressUpdateSchema = z.object({
-  status: z.string(),
-  message: z.string(),
-  result: z.string().optional(),
-});
-
-export const ResetRequestSchema = z.object({
-  instanceId: z.string().optional(),
-});
-
-// Type guards (kept for ChatCompletionResponse which is used in workflow.ts)
-
-export function isChatCompletionResponse(v: unknown): v is ChatCompletionResponse {
-  if (v === null || typeof v !== "object") return false;
-  const r = v as Partial<ChatCompletionResponse>;
-  return typeof r.id === "string" && typeof r.model === "string" && Array.isArray(r.choices);
-}

@@ -1,6 +1,5 @@
-import { WorkflowEntrypoint } from "cloudflare:workers";
-import type { WorkflowStep } from "cloudflare:workers";
-import type { WorkflowEvent } from "cloudflare:workers";
+import { AgentWorkflow } from "agents/workflows";
+import type { AgentWorkflowEvent, AgentWorkflowStep } from "agents/workflows";
 import {
   tools,
   searchReposTool,
@@ -8,22 +7,28 @@ import {
   isSearchReposInput,
   isGetRepoInput,
 } from "./tools";
-import { isChatCompletionResponse } from "./types";
 import type {
   WorkflowResult,
-  ProgressUpdate,
   ChatMessage,
   ChatCompletionRequest,
   ChatCompletionResponse,
   ToolDefinition,
 } from "./types";
-import { MAX_AGENT_TURNS } from "./constants";
+import type { ResearchAgent } from "./agent";
 
-type Params = { task: string; agentId: string };
+function isChatCompletionResponse(v: unknown): v is ChatCompletionResponse {
+  if (v === null || typeof v !== "object") return false;
+  const r = v as Partial<ChatCompletionResponse>;
+  return typeof r.id === "string" && typeof r.model === "string" && Array.isArray(r.choices);
+}
 
-export class AgentWorkflow extends WorkflowEntrypoint<Env, Params> {
+const MAX_TURNS = 10;
+
+type Params = { task: string };
+
+export class ResearchWorkflow extends AgentWorkflow<ResearchAgent, Params> {
+  // AI Gateway compat endpoint provides unified billing across providers
   private getAIGatewayUrl(): string {
-    // Use the compat endpoint for unified billing with OpenAI-compatible format
     return `https://gateway.ai.cloudflare.com/v1/${this.env.CF_ACCOUNT_ID}/${this.env.CF_GATEWAY_ID}/compat/chat/completions`;
   }
 
@@ -45,7 +50,7 @@ export class AgentWorkflow extends WorkflowEntrypoint<Env, Params> {
     return response.json();
   }
 
-  // Convert our tool definitions to OpenAI format
+  // Convert tool definitions to OpenAI-compatible format
   private getToolDefinitions(): ToolDefinition[] {
     return tools.map((tool) => ({
       type: "function" as const,
@@ -61,48 +66,34 @@ export class AgentWorkflow extends WorkflowEntrypoint<Env, Params> {
     }));
   }
 
-  async run(event: WorkflowEvent<Params>, step: WorkflowStep): Promise<WorkflowResult> {
+  async run(event: AgentWorkflowEvent<Params>, step: AgentWorkflowStep): Promise<WorkflowResult> {
     const messages: ChatMessage[] = [
       { role: "user", content: event.payload.task },
     ];
 
     const toolDefinitions = this.getToolDefinitions();
 
-    // Get agent for real-time updates
-    const agentId = event.payload.agentId;
-    const id = this.env.RESEARCH_AGENT.idFromName(agentId);
-    const agent = this.env.RESEARCH_AGENT.get(id);
+    // Agentic loop - each step is durably checkpointed
+    for (let turn = 0; turn < MAX_TURNS; turn++) {
+      // Update agent state (durable, broadcasts to connected clients)
+      await step.mergeAgentState({
+        status: "running",
+        message: `Processing turn ${turn + 1}...`,
+      });
 
-    // Send initial status (clear any previous result)
-    const initialUpdate: ProgressUpdate = {
-      status: "searching",
-      message: "Starting analysis...",
-      result: ""
-    };
-    await agent.updateProgress(initialUpdate);
-
-    // Durable agent loop - each turn is checkpointed
-    for (let turn = 0; turn < MAX_AGENT_TURNS; turn++) {
-      // Update status for each turn
-      const turnUpdate: ProgressUpdate = {
-        status: "analyzing",
-        message: `Processing turn ${turn + 1}...`
-      };
-      await agent.updateProgress(turnUpdate);
-
+      // Call the LLM with retry logic
       const stepResult = await step.do(
         `llm-turn-${turn}`,
         { retries: { limit: 3, delay: "10 seconds", backoff: "exponential" } },
         async () => {
           const request: ChatCompletionRequest = {
-            // Use anthropic/ prefix for unified billing compat endpoint
             model: "anthropic/claude-sonnet-4-5-20250929",
             max_tokens: 4096,
             messages,
             tools: toolDefinitions,
           };
           const result = await this.callAIGateway(request);
-          // Serialize for Workflow state
+          // Serialize to ensure workflow state is JSON-safe
           return JSON.parse(JSON.stringify(result));
         },
       );
@@ -111,49 +102,40 @@ export class AgentWorkflow extends WorkflowEntrypoint<Env, Params> {
         console.error("Invalid response from AI Gateway:", stepResult);
         continue;
       }
-      const response = stepResult;
 
-      if (response.choices.length === 0) continue;
-
-      const choice = response.choices[0];
+      const choice = stepResult.choices[0];
       if (!choice) continue;
 
-      const assistantMessage: ChatMessage = {
+      messages.push({
         role: "assistant",
         content: choice.message.content,
-        tool_calls: choice.message.tool_calls,
-      };
-      messages.push(assistantMessage);
+        ...(choice.message.tool_calls && { tool_calls: choice.message.tool_calls }),
+      });
 
-      // Check if the model is done (no tool calls)
-      if (choice.finish_reason === "stop" || !choice.message.tool_calls || choice.message.tool_calls.length === 0) {
-        // Send completion status
-        const completeUpdate: ProgressUpdate = {
-          status: "complete",
-          message: "Analysis complete!",
-          result: choice.message.content ?? undefined
-        };
-        await agent.updateProgress(completeUpdate);
-
-        return {
+      // Done - model finished without requesting tool calls
+      if (choice.finish_reason === "stop" || !choice.message.tool_calls?.length) {
+        const result: WorkflowResult = {
           status: "complete",
           turns: turn + 1,
           result: choice.message.content ?? null,
         };
+
+        // Update agent state with final result (durable)
+        await step.mergeAgentState({
+          status: "complete",
+          message: "Complete",
+          result: choice.message.content ?? undefined,
+        });
+
+        return result;
       }
 
       // Process tool calls
-      const toolCalls = choice.message.tool_calls;
-      if (!toolCalls) continue;
+      for (const toolCall of choice.message.tool_calls) {
+        // Broadcast tool execution to clients (non-durable, real-time UI update)
+        this.broadcastToClients({ type: "tool_call", tool: toolCall.function.name, turn });
 
-      for (const toolCall of toolCalls) {
-        // Send tool usage update
-        const toolUpdate: ProgressUpdate = {
-          status: "fetching",
-          message: `Using tool: ${toolCall.function.name}...`
-        };
-        await agent.updateProgress(toolUpdate);
-
+        // Execute tool with retry logic
         const toolResult = await step.do(
           `tool-${turn}-${toolCall.id}`,
           { retries: { limit: 2, delay: "5 seconds" } },
@@ -161,31 +143,21 @@ export class AgentWorkflow extends WorkflowEntrypoint<Env, Params> {
             const args: unknown = JSON.parse(toolCall.function.arguments);
             switch (toolCall.function.name) {
               case "search_repos":
-                if (!isSearchReposInput(args)) {
-                  return "Invalid arguments for search_repos";
-                }
-                return searchReposTool.run(args);
+                return isSearchReposInput(args) ? searchReposTool.run(args) : "Invalid arguments";
               case "get_repo":
-                if (!isGetRepoInput(args)) {
-                  return "Invalid arguments for get_repo";
-                }
-                return getRepoTool.run(args);
+                return isGetRepoInput(args) ? getRepoTool.run(args) : "Invalid arguments";
               default:
                 return `Unknown tool: ${toolCall.function.name}`;
             }
           },
         );
 
-        // Add tool result as a message
-        const toolMessage: ChatMessage = {
-          role: "tool",
-          content: toolResult,
-          tool_call_id: toolCall.id,
-        };
-        messages.push(toolMessage);
+        messages.push({ role: "tool", content: toolResult, tool_call_id: toolCall.id });
       }
     }
 
-    return { status: "max_turns_reached", turns: MAX_AGENT_TURNS };
+    // Max turns reached without completion
+    await step.mergeAgentState({ status: "error", message: "Max turns reached" });
+    return { status: "max_turns_reached", turns: MAX_TURNS };
   }
 }
