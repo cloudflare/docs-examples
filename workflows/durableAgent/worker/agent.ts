@@ -1,15 +1,25 @@
-import { Agent } from "agents";
-import { AgentStatus } from "./types";
-import type { AgentState, ProgressUpdate } from "./types";
+import { Agent, callable } from "agents";
+import type { AgentState } from "./types";
 
 export class ResearchAgent extends Agent<Env, AgentState> {
-  initialState: AgentState = { status: AgentStatus.IDLE, message: "" };
+  initialState: AgentState = { status: "idle", message: "" };
 
-  async reset(): Promise<void> {
-    this.setState({ status: AgentStatus.IDLE, message: "" });
+  @callable()
+  async startResearch(task: string) {
+    const instanceId = await this.runWorkflow("RESEARCH_WORKFLOW", { task });
+    this.setState({ status: "running", message: "Starting research...", currentWorkflow: instanceId });
+    return { instanceId };
   }
 
-  async updateProgress(progress: ProgressUpdate): Promise<void> {
-    this.setState({ ...this.state, ...progress } as AgentState);
+  @callable()
+  async reset() {
+    if (this.state.currentWorkflow) {
+      try {
+        await this.terminateWorkflow(this.state.currentWorkflow);
+      } catch (e) {
+        console.warn("Failed to terminate workflow:", e);
+      }
+    }
+    this.setState({ status: "idle", message: "" });
   }
 }

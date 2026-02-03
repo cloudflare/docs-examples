@@ -14,14 +14,11 @@
 	},
 	"dependencies": {
 		"@cloudflare/cloudflare-brand-assets": "^4.7.7",
-		"@hono/zod-validator": "^0.7.6",
-		"agents": "^0.3.4",
-		"hono": "^4.11.4",
+		"agents": "^0.3.7",
 		"partysocket": "^1.1.10",
 		"react": "^19.2.3",
 		"react-dom": "^19.2.3",
-		"react-markdown": "^10.1.0",
-		"zod": "^4.3.5"
+		"react-markdown": "^10.1.0"
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "^1.20.3",
