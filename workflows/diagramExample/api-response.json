@@ -1,0 +1,238 @@
+{
+    "success": true,
+    "errors": [],
+    "messages": [],
+    "result": {
+        "created_on": "2026-02-23T11:42:06.583Z",
+        "modified_on": "2026-02-23T11:42:38.446Z",
+        "id": "64187143-a74b-4cd6-a0fc-782a7848d7ec",
+        "workflow_id": "91a6ec1e-d957-4693-b84e-681b974260c3",
+        "class_name": "WritingReviewWorkflow",
+        "dag": {
+            "version": 1,
+            "workflow": {
+                "class_name": "WritingReviewWorkflow",
+                "params": [
+                    "r2Key",
+                    "telegramChatId",
+                    "context",
+                    "approved",
+                    "source",
+                    "responder",
+                    "feedback"
+                ],
+                "functions": {
+                    "runLoop": {
+                        "name": "runLoop",
+                        "nodes": [
+                            {
+                                "type": "if",
+                                "branches": [
+                                    {
+                                        "condition": "loop > maxLoops",
+                                        "nodes": [
+                                            {
+                                                "type": "step_do",
+                                                "name": "notify max loop reached",
+                                                "config": {
+                                                    "retries": {
+                                                        "limit": 5,
+                                                        "delay": 1000,
+                                                        "backoff": "exponential"
+                                                    },
+                                                    "timeout": 10000
+                                                },
+                                                "nodes": []
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "condition": null,
+                                        "nodes": [
+                                            {
+                                                "type": "step_do",
+                                                "name": "summary agent (loop ${...})",
+                                                "config": {
+                                                    "retries": {
+                                                        "limit": 5,
+                                                        "delay": 1000,
+                                                        "backoff": "exponential"
+                                                    },
+                                                    "timeout": 10000
+                                                },
+                                                "nodes": [],
+                                                "starts": 1
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "parallel",
+                                "kind": "all",
+                                "nodes": [
+                                    {
+                                        "type": "step_do",
+                                        "name": "correctness agent (loop ${...})",
+                                        "config": {
+                                            "retries": {
+                                                "limit": 5,
+                                                "delay": 1000,
+                                                "backoff": "exponential"
+                                            },
+                                            "timeout": 10000
+                                        },
+                                        "nodes": [],
+                                        "starts": 1
+                                    },
+                                    {
+                                        "type": "step_do",
+                                        "name": "clarity agent (loop ${...})",
+                                        "config": {
+                                            "retries": {
+                                                "limit": 5,
+                                                "delay": 1000,
+                                                "backoff": "exponential"
+                                            },
+                                            "timeout": 10000
+                                        },
+                                        "nodes": [],
+                                        "starts": 1
+                                    },
+                                    {
+                                        "type": "step_do",
+                                        "name": "run consolidation agent (loop ${...})",
+                                        "config": {
+                                            "retries": {
+                                                "limit": 5,
+                                                "delay": 1000,
+                                                "backoff": "exponential"
+                                            },
+                                            "timeout": 10000
+                                        },
+                                        "nodes": [],
+                                        "starts": 1,
+                                        "resolves": 2
+                                    },
+                                    {
+                                        "type": "step_do",
+                                        "name": "send telegram review (loop ${...})",
+                                        "config": {
+                                            "retries": {
+                                                "limit": 5,
+                                                "delay": 1000,
+                                                "backoff": "exponential"
+                                            },
+                                            "timeout": 10000
+                                        },
+                                        "nodes": [],
+                                        "starts": 2,
+                                        "resolves": 3
+                                    },
+                                    {
+                                        "type": "step_wait_for_event",
+                                        "name": "wait for user response (loop ${...})",
+                                        "options": {
+                                            "event_type": "user-response",
+                                            "timeout": "unknown"
+                                        },
+                                        "starts": 3,
+                                        "resolves": 4
+                                    }
+                                ]
+                            },
+                            {
+                                "type": "if",
+                                "branches": [
+                                    {
+                                        "condition": "approval.payload.approved",
+                                        "nodes": [
+                                            {
+                                                "type": "step_do",
+                                                "name": "publish approved text to discord",
+                                                "config": {
+                                                    "retries": {
+                                                        "limit": 5,
+                                                        "delay": 1000,
+                                                        "backoff": "exponential"
+                                                    },
+                                                    "timeout": 10000
+                                                },
+                                                "nodes": [],
+                                                "starts": 4,
+                                                "resolves": 5
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "condition": null,
+                                        "nodes": [
+                                            {
+                                                "type": "function_call",
+                                                "name": "runLoop",
+                                                "starts": 5
+                                            }
+                                        ]
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "nodes": [
+                    {
+                        "type": "if",
+                        "branches": [
+                            {
+                                "condition": "msg instanceof Error",
+                                "nodes": []
+                            },
+                            {
+                                "condition": null,
+                                "nodes": [
+                                    {
+                                        "type": "step_do",
+                                        "name": "validate payload",
+                                        "config": {
+                                            "retries": {
+                                                "limit": 5,
+                                                "delay": 1000,
+                                                "backoff": "exponential"
+                                            },
+                                            "timeout": 10000
+                                        },
+                                        "nodes": []
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    {
+                        "type": "step_do",
+                        "name": "load source document from r2",
+                        "config": {
+                            "retries": {
+                                "limit": 5,
+                                "delay": 1000,
+                                "backoff": "exponential"
+                            },
+                            "timeout": 10000
+                        },
+                        "nodes": []
+                    },
+                    {
+                        "type": "parallel",
+                        "kind": "all",
+                        "nodes": [
+                            {
+                                "type": "function_call",
+                                "name": "runLoop",
+                                "starts": 1
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+    }
+}
