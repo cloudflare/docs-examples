@@ -1,0 +1,18 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "mta-sts-proxy",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-06-08",
+	"observability": {
+		"enabled": true
+	}
+	/**
+	 * After deploying, add a custom domain of `mta-sts.<your-domain>` under
+	 * Settings > Domains & Routes so the policy file is served from your domain.
+	 * https://developers.cloudflare.com/email-service/configuration/mta-sts/
+	 */
+}
