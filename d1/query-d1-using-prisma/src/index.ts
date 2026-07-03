@@ -12,6 +12,7 @@ export default {
 
 		const users = await prisma.user.findMany();
 		const result = JSON.stringify(users);
+		ctx.waitUntil(prisma.$disconnect()); // or just await prisma.$disconnect()
 		return new Response(result);
 	},
 } satisfies ExportedHandler<Env>;
